@@ -1,7 +1,8 @@
 const express = require('express')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const cors = require('cors')
+const cors = require('cors');
 require('dotenv').config();
+const fileUpload = require('express-fileupload');
 
 const app = express()
 const port = 3000
@@ -10,6 +11,7 @@ const port = 3000
 app.use(cors())
 // req.body undefined solve
 app.use(express.json())
+app.use(fileUpload());
 
 
 
@@ -30,6 +32,7 @@ async function run() {
         const appointmentOptionCollection = database.collection('appointmentOptions');
         const bookingsCollection = database.collection('Bookings');
         const usersCollection = database.collection('Users');
+        const doctorsCollection = database.collection('Doctors');
 
         // chages
         app.get('/appointmentOptions', async (req, res) => {
@@ -130,6 +133,41 @@ async function run() {
             res.send(result)
         })
 
+
+
+        // doctots
+        app.post('/doctors', async (req, res) => {
+            const name = req.body.name;
+            const email = req.body.email;
+            const specialty = req.body.specialty;
+            const pic = req.files.image;
+            const picData = pic.data
+            const encodedPic = picData.toString('base64');
+            const imageBuffer = Buffer.from(encodedPic, 'base64');
+            const doctor = {
+                name,
+                email,
+                specialty,
+                image: imageBuffer
+            }
+            const result = await doctorsCollection.insertOne(doctor);
+            res.send(result)
+        })
+
+
+        app.get('/doctors', async (req, res) => {
+            const query = {};
+            const result = await doctorsCollection.find(query).toArray();
+            res.send(result)
+        })
+
+        app.delete('/doctors/:id', async (req, res) => {
+            const id = req.params.id;
+            const searchDeleteId = { _id: new ObjectId(id) }
+            const deletedDoctor = await doctorsCollection.deleteOne(searchDeleteId);
+            res.send(deletedDoctor)
+
+        })
 
 
     } finally {
